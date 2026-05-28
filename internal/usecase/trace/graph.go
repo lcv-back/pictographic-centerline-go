@@ -121,7 +121,7 @@ func traceFromComponent(skeleton Mask, compID []int, comps []component, startCom
 	cur := next
 	markVisited(visited, prev, cur)
 
-	for {
+	for steps := 0; steps <= len(skeleton.Data); steps++ {
 		if compID[cur] >= 0 {
 			points = append(points, comps[compID[cur]].Center)
 			return Path{
@@ -139,6 +139,8 @@ func traceFromComponent(skeleton Mask, compID []int, comps []component, startCom
 		markVisited(visited, cur, nxt)
 		prev, cur = cur, nxt
 	}
+
+	return Path{Points: points}
 }
 
 func traceLoop(skeleton Mask, start int, next int, visited map[uint64]bool) Path {
@@ -147,7 +149,7 @@ func traceLoop(skeleton Mask, start int, next int, visited map[uint64]bool) Path
 	cur := next
 	markVisited(visited, prev, cur)
 
-	for {
+	for steps := 0; steps <= len(skeleton.Data); steps++ {
 		if cur == start {
 			return Path{Points: points, Closed: true}
 		}
@@ -160,6 +162,8 @@ func traceLoop(skeleton Mask, start int, next int, visited map[uint64]bool) Path
 		markVisited(visited, cur, nxt)
 		prev, cur = cur, nxt
 	}
+
+	return Path{Points: points}
 }
 
 func unvisitedForwardNeighbors(skeleton Mask, cur int, prev int, visited map[uint64]bool) []int {
@@ -170,13 +174,6 @@ func unvisitedForwardNeighbors(skeleton Mask, cur int, prev int, visited map[uin
 		}
 		if !isVisited(visited, cur, nb) {
 			out = append(out, nb)
-		}
-	}
-	if len(out) == 0 {
-		for _, nb := range neighborIndices(skeleton, cur) {
-			if nb != prev {
-				out = append(out, nb)
-			}
 		}
 	}
 
