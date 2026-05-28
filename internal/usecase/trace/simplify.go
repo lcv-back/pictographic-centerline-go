@@ -47,7 +47,7 @@ func pointSegmentDistanceSq(p, a, b Point) float64 {
 	vx := b.X - a.X
 	vy := b.Y - a.Y
 	wx := p.X - a.X
-	wy := p.Y - b.Y
+	wy := p.Y - a.Y
 	denom := vx*vx + vy*vy
 	if denom == 0 {
 		dx := p.X - a.X

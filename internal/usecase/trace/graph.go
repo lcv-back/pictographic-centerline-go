@@ -20,7 +20,7 @@ func ExtractPaths(skeleton Mask, prune float64) []Path {
 	for _, comp := range comps {
 		for _, pixel := range comp.Pixels {
 			for _, nb := range neighborIndices(skeleton, pixel) {
-				if compID[nb] != comp.ID {
+				if compID[nb] == comp.ID {
 					continue
 				}
 				if isVisited(visited, pixel, nb) {
@@ -91,7 +91,7 @@ func nodeComponents(skeleton Mask) ([]int, []component) {
 			sumY += y
 
 			for _, nb := range neighborIndices(skeleton, cur) {
-				if !nodeMask[nb] && compID[nb] < 0 {
+				if nodeMask[nb] && compID[nb] < 0 {
 					compID[nb] = id
 					queue = append(queue, nb)
 				}

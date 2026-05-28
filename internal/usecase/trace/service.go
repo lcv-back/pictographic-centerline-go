@@ -15,7 +15,7 @@ func (Service) Trace(fullMask Mask, cfg Config) Result {
 		cfg.Prune = 0
 	}
 
-	mask, offsetX, offsetT, ok := cropMask(fullMask, 2)
+	mask, offsetX, offsetY, ok := cropMask(fullMask, 2)
 	if !ok {
 		return Result{
 			Width:       fullMask.W,
@@ -27,7 +27,7 @@ func (Service) Trace(fullMask Mask, cfg Config) Result {
 
 	skeleton := ThinZhangSuen(mask)
 	paths := ExtractPaths(skeleton, cfg.Prune)
-	translatePaths(paths, float64(offsetX), float64(offsetT))
+	translatePaths(paths, float64(offsetX), float64(offsetY))
 	paths = MergeCollinear(paths)
 
 	for i := range paths {
