@@ -39,6 +39,12 @@ Useful flags:
 
 For the challenge images, the output SVG keeps the input dimensions in the viewBox. With the provided 1024x1024 icons that gives `viewBox="0 0 1024 1024"`.
 
+## Why Go
+
+I choose Go because the challenge forbids third-party libraries, and Go's standard library already includes reliable PNG through `image`, `image/png`, and `image/color`. That means the program can read pixels directly without depending on Pillow, OpenCV, skimage, potrace, or any other external package.
+
+Go is also a good fit for this submission because the core algorithm is pixel/grid processing traversal. The code stays explicit, fast enough for 1024x1024 icons, easy to run with `go run`, and easy to review. Python would be pleasant for prototying, but without Pillow or Numpy its standard library is much less convenient for PNG pixel work. Rust would be a good systems choice, but PNG decoding normally requires an external crate; implementing PNG parsing from scarch would distract from centerline algorithm.
+
 ## Architecture
 
 The code is organized as a small Clean Architecture CLI:
@@ -80,9 +86,31 @@ After thinning, the remaining one-pixel-wide skeleton is converted into a graph.
 
 Stroke width defaults to 45 to match the reference style. Passing `-stroke-with 0` estimates a width from a simple chamfer distance transform: skeleton pixels are roughly at the stroke radius, so twice their median distance to the background is a good first estimate.
 
-## Differences from the Hint
+## Approach Trade-offs
 
-The hint suggest tracing contours and probing perpendiculars across the stroke to find midpoints. This implementation instead uses topology-preserving thinning. Both approaches aim at the medial exis; thinning is simpler to implement without third-party libraries and gives good topology for solid icon strokes.
+The prompt hints at a contours-based approach:
+
+```text
+binary mask -> trace contour -> shoot perpendiculars across the stroke -> connect midpoints
+```
+
+This implementation uses a thinning-based approach instead:
+
+```text
+binary mask -> Zhang-Suen thinning -> skeleton graph -> simplified stroked SVG path
+```
+
+Both approaches target the same thing: the medial axis of the filled shape.
+
+The contour/perpendicular approach has higher final-quality potential for clean constant width strokes. If the local direction is known, a perpendicular cut can find the two opposite boudaries and place the centerline exactly between them. That can produce smoother and more geometrically precise center points than pixel-grid thinning.
+
+The hard part is ambiguity. At T, H, plus and curved junctions, a perpendicular line can intersect the shape boundary more than twice. Choosing wich boundary points from a pair becomes a topology problem. A wrong pairing can connect thw wrong branches or move the junction away from where a pen stroke would naturally meet.
+
+Zhang-Suen thinning is more direct to implement under the no-library constraint. It removes boundary pixels only when doing so preserves connectivity, so it tends to keep the branch structure of the icon intact. That make it a practical first pass for preserving topology at intersections.
+
+The trade-off is that thinning works on the pixel grid. Diagonal and curved strokes can becomes slightly stair-stepped, and small bumps on the contour can create short skeleton spurs. This implementation addresses that with graph tracing, short-branch pruning, collinear junction merging, Ramer-Douglas-Peuker simplification, and optional cubic smoothing.
+
+In short, I chose thinning for this version because it gives a robust, explainable, dependency-free centerline extrator. With more time, I would combine both approaches: use thinning to recover topology, then use contour/ perpendicular midpoint sampling to refine each skeleton point to a clear geometric center.
 
 ## Know Divergences
 
@@ -102,3 +130,7 @@ For larger datasets, tune `-workers` to match the machine. More workers can impr
 - Improve junction classification with local stroke radisus and contour evidence instead of only endpoint angles.,
 - Add a better spur classifier using local stroke radius, not just path length.
 - COmpare output against the provided reference SVGs with a small rastrization-based metrics.
+
+```
+
+```
